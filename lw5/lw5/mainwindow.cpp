@@ -1,18 +1,36 @@
 #include "mainwindow.h"
 
 #include <QMenuBar>
+#include <QStatusBar>
 #include <QToolBar>
 #include <QEvent>
 #include <QHelpEvent>
 #include <QToolTip>
 #include <QCoreApplication>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QTextStream>
+#include <QLineEdit>
+#include <QLabel>
+#include <QPushButton>
+#include <QGridLayout>
+#include <QPlainTextEdit>
+#include <QFontDialog>
+#include <QColorDialog>
+#include <QMimeDatabase>
+#include <QTextDocument>
+
+
+
+
+
 
 #include <iostream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setMinimumSize(800,600);
+    setFixedSize(800,600);
 
     _Widget = new Widget(this,menuBar()->height());
     setCentralWidget(_Widget);
@@ -61,10 +79,9 @@ MainWindow::MainWindow(QWidget *parent)
                                             QKeySequence::SelectAll);
 
     _MenuFormat = menuBar()->addMenu(tr("&Формат"));
-    _ActionWordWrap = _MenuFormat->addAction(tr("Перенос по словам"),
-                                             _Widget, SLOT(switchWordWrap()));
+    _ActionWordWrap = _MenuFormat->addAction(tr("Перенос по словам"));
     _ActionWordWrap->setCheckable(true);
-    _ActionWordWrap->setChecked(false);
+    _ActionWordWrap->setChecked(true);
     _ActionChangeFont = _MenuFormat->addAction(tr("Выбор шрифта"),
                                                _Widget, SLOT(showChangeFont()));
 
@@ -72,45 +89,68 @@ MainWindow::MainWindow(QWidget *parent)
     _ActionChangeBackground = _MenuView->addAction(tr("Выбор цвета фона"),
                                          _Widget, SLOT(showChangeBackground()));
     _ActionChangeLineColor = _MenuView->addAction(
-                tr("Выбор цвета текущей строки"),
+                                               tr("Выбор цвета текущей строки"),
                                           _Widget, SLOT(showChangeLineColor()));
     _ActionChangeNumeration = _MenuView->addAction(
-                tr("Вкл/Выкл отображения нумерации строк"),
-                _Widget, SLOT(switchNumeration()));
+                                    tr("Вкл/Выкл отображения нумерации строк"));
     _ActionChangeNumeration->setCheckable(true);
     _ActionChangeNumeration->setChecked(true);
     _ActionChangeToolBar = _MenuView->addAction(
-                tr("Вкл/Выкл отображения панели инструментов"),
-                _Widget, SLOT(switchToolBar()));
-    _ActionChangeNumeration->setCheckable(true);
-    _ActionChangeNumeration->setChecked(true);
+                                tr("Вкл/Выкл отображения панели инструментов"));
+    _ActionChangeToolBar->setCheckable(true);
+    _ActionChangeToolBar->setChecked(true);
     _ActionChangeState = _MenuView->addAction(
-                tr("Вкл/Выкл отображения строки состояния"),
-                _Widget, SLOT(switchState()));
-    _ActionChangeNumeration->setCheckable(true);
-    _ActionChangeNumeration->setChecked(true);
+                                   tr("Вкл/Выкл отображения строки состояния"));
+    _ActionChangeState->setCheckable(true);
+    _ActionChangeState->setChecked(true);
     _ActionChangeHighlight = _MenuView->addAction(
-                tr("Вкл/Выкл подсветки синтаксиса"),
-                _Widget, SLOT(switchHighlight()));
-    _ActionChangeNumeration->setCheckable(true);
-    _ActionChangeNumeration->setChecked(true);
+                                           tr("Вкл/Выкл подсветки синтаксиса"));
+    _ActionChangeHighlight->setCheckable(true);
+    _ActionChangeHighlight->setChecked(true);
     _MenuChangeSyntax = _MenuView->addMenu(tr("Выбор синтаксиса"));
-    _C11 = _MenuView->addAction(tr("Си 2011"), _Widget, SLOT(с11Syntax()));
-    _Cpp14 = _MenuView->addAction(tr("Си++ 2014"),
-                                  _Widget, SLOT(сpp14Syntax()));
+    _C11 = _MenuChangeSyntax->addAction(tr("Си 2011"),
+                                                    _Widget, SLOT(c11Syntax()));
+    _Cpp14 = _MenuChangeSyntax->addAction(tr("Си++ 2014"),
+                                                  _Widget, SLOT(cpp14Syntax()));
     //list of syntaxes available, 1 available always - default
     _MenuChangeStyle = _MenuView->addMenu(
-                tr("Выбор/Редактирование стиля подсветки"));
+                                    tr("Выбор/Редактирование стиля подсветки"));
     _ActionChangeStyle = _MenuChangeStyle->addAction(tr("Изменить"),
-                                                     _Widget,
-                                                     SLOT(showChangeStyle()));
+                                              _Widget, SLOT(showChangeStyle()));
     _ActionLoadStyle = _MenuChangeStyle->addAction(
-                tr("Загрузка стиля из файла"),
-                _Widget, SLOT(showLoadStyle()));
+                 tr("Загрузка стиля из файла"), _Widget, SLOT(showLoadStyle()));
     //list of styles available, 1 available always - default
 
     _MenuReference = menuBar()->addMenu(tr("&Справка"));
     _ActionAbout = _MenuReference->addAction(tr("О программе"));
+
+    connect(_ActionWordWrap, &QAction::toggled,
+                                              _Widget, &Widget::switchWordWrap);
+    connect(_ActionChangeNumeration, &QAction::toggled,
+                                            _Widget, &Widget::switchNumeration);
+    connect(_ActionChangeToolBar, &QAction::toggled,
+                                               _Widget, &Widget::switchToolBar);
+    connect(_ActionChangeState, &QAction::toggled,
+                                          statusBar(), &QStatusBar::setVisible);
+    connect(_ActionChangeHighlight, &QAction::toggled,
+                                             _Widget, &Widget::switchHighlight);
+    _ActionWordWrap->setChecked(true);
+    _ActionChangeNumeration->setChecked(true);
+    _ActionChangeToolBar->setChecked(true);
+    _ActionChangeState->setChecked(true);
+    _ActionChangeHighlight->setChecked(true);
+
+    _Cursor = new QLabel("x: 0, y: 0");
+    _Last = new QLabel("");
+    _Amounts = new QLabel("Строки: 0, слова: 0, символы: 0, размер: 0");
+
+    statusBar()->addPermanentWidget(_Cursor, 1);
+    statusBar()->addPermanentWidget(_Last, 1);
+    statusBar()->addPermanentWidget(_Amounts, 1);
+
+}
+void MainWindow::updateStatus() {
+    cursorPos->setText("x: " + QString::number(std::to_string(posX)) + ", y: " + QString::fromStdString(std::to_string(posY)));
 }
 
 MenuBar::MenuBar(QWidget *parent)
@@ -137,7 +177,7 @@ bool MenuBar::event(QEvent *e)
 }
 
 
-Widget::Widget(QWidget *parent, int dh)
+Widget::Widget(MainWindow *parent, int dh)
     : QWidget(parent)
 {
     setMinimumSize(800,600-dh);
@@ -166,71 +206,228 @@ Widget::Widget(QWidget *parent, int dh)
     _ToolReplace = _ToolMenuFind->addAction(tr("Найти и заменить"),
                                             this, SLOT(findAndReplace()));
 
+    _TextField = new CodeEditor(this);
+    _TextField->setGeometry(0,_ToolBar->height()*0.7,
+                       800,600-dh/2-_ToolBar->height()/0.7);
+    _TextField->setContextMenuPolicy(Qt::NoContextMenu);
+    _Doc = _TextField->document();
+
+    connect(_Doc, &QTextDocument::modificationChanged,
+            parent->_ActionSave, &QAction::setEnabled);
+    connect(_Doc, &QTextDocument::modificationChanged,
+            this, &QWidget::setWindowModified);
+    connect(_Doc, &QTextDocument::contentsChanged,
+            parent, &MainWindow::updateStatus);
 }
-void Widget::newFile() {                                                  // !!!
-    std::cout << "nf\n";
+void Widget::newFile() {
+    _File.clear();
+    _TextField->clear();
+    setWindowTitle(QString());
 }
-void Widget::openFile() {                                                 // !!!
-    std::cout << "of\n";
+void Widget::openFile() {
+    QString fileName = QFileDialog::getOpenFileName(this, "Выберите файл");
+    QFile file(fileName);
+    _File = fileName;
+    if (!file.open(QIODevice::ReadOnly | QFile::Text)) {
+        QMessageBox::warning(this, "Ошибка", "Не открыть файл: "
+                                                          + file.errorString());
+        return;
+    }
+    setWindowTitle(fileName);
+    //_TextField->setText(text);
+    QByteArray data = file.readAll();
+    QMimeDatabase db;
+    const QString &mimeType =
+                           db.mimeTypeForFileNameAndData(fileName, data).name();
+    if (mimeType == "text/plain")
+        _TextField->setPlainText(QString::fromUtf8(data));
+    //setname(f);
+    file.close();
 }
-void Widget::saveFile() {                                                 // !!!
-    std::cout << "sf\n";
+void Widget::saveFile() {
+    QString fileName;
+    // If we don't have a filename from before, get one.
+    if (_File.isEmpty()) {
+        fileName = QFileDialog::getSaveFileName(this, "Сохранить");
+        _File = fileName;
+    } else {
+        fileName = _File;
+    }
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly | QFile::Text)) {
+        QMessageBox::warning(this, "Ошибка", "Не сохранить файл: "
+                                                          + file.errorString());
+        return;
+    }
+    setWindowTitle(fileName);
+    QTextStream out(&file);
+    QString text = _TextField->toPlainText();
+    out << text;
+    file.close();
 }
-void Widget::saveFileAs() {                                               // !!!
-    std::cout << "sfa\n";
+void Widget::saveFileAs() {
+    QString fileName = QFileDialog::getSaveFileName(this, "Save as");
+    QFile file(fileName);
+
+    if (!file.open(QFile::WriteOnly | QFile::Text)) {
+        QMessageBox::warning(this, "Ошибка", "Не сохранить файл: "
+                                                          + file.errorString());
+        return;
+    }
+    _File = fileName;
+    setWindowTitle(fileName);
+    QTextStream out(&file);
+    QString text = _TextField->toPlainText();
+    out << text;
+    file.close();
 }
-void Widget::undo() {                                                     // !!!
-    std::cout << "u\n";
+
+void Widget::undo() {
+    _TextField->undo();
 }
-void Widget::redo() {                                                     // !!!
-    std::cout << "r\n";
+void Widget::redo() {
+    _TextField->redo();
 }
-void Widget::copy() {                                                     // !!!
-    std::cout << "co\n";
+
+void Widget::copy() {
+    _TextField->copy();
 }
-void Widget::cut() {                                                      // !!!
-    std::cout << "cu\n";
+void Widget::cut() {
+    _TextField->cut();
 }
-void Widget::paste() {                                                    // !!!
-    std::cout << "p\n";
+void Widget::paste() {
+    _TextField->paste();
 }
-void Widget::find() {                                                     // !!!
-    std::cout << "f\n";
+
+void Widget::find() {
+    QDialog *FindDialog = new QDialog(this);
+    FindDialog->setModal(0);
+    FindDialog->setFixedSize(250, 100);
+
+    QFrame *frame = new QFrame(this);
+    frame->setFrameStyle(0);
+
+    QLabel *TextFind = new QLabel(tr("Найти: "), frame);
+    _FindW = new QLineEdit(frame);
+
+    QPushButton *NextB = new QPushButton(tr("Следующий"), frame);
+    QPushButton *BackB = new QPushButton(tr("Предыдущий"), frame);
+
+    QGridLayout *fl = new QGridLayout(frame);
+    fl->addWidget(TextFind, 0, 0);
+    fl->addWidget(_FindW, 0, 1);
+    frame->setLayout(fl);
+
+    QGridLayout *l = new QGridLayout(this);
+    l->addWidget(frame, 0, 0, 1, 0);
+    l->addWidget(NextB, 1, 0);
+    l->addWidget(BackB, 1, 1);
+    FindDialog->setLayout(l);
+
+    connect(NextB, &QPushButton::clicked, this, &Widget::findNext);
+    connect(BackB, &QPushButton::clicked, this, &Widget::findPrev);
+
+    FindDialog->show();
 }
-void Widget::findAndReplace() {                                           // !!!
-    std::cout << "far\n";
+void Widget::findNext() {
+    //QString searchString = _FindW->text();
+    _TextField->find(_FindW->text(), QTextDocument::FindWholeWords);
 }
-void Widget::selectAll() {                                                // !!!
-    std::cout << "sa\n";
+void Widget::findPrev() {
+    //QString searchString = findword->text();
+    _TextField->find(_FindW->text(),
+                   QTextDocument::FindWholeWords | QTextDocument::FindBackward);
 }
-void Widget::switchWordWrap() {                                           // !!!
-    std::cout << "sww\n";
+void Widget::findAndReplace() {
+    QDialog *FindDialog = new QDialog(this);
+    FindDialog->setModal(0);
+    FindDialog->setFixedSize(250, 125);
+
+    QFrame *frame = new QFrame(this);
+    frame->setFrameStyle(0);
+    QLabel *TextFind = new QLabel(tr("Найти: "), frame);
+    QLabel *TextReplace = new QLabel(tr("Заменить: "), frame);
+
+    _FindW = new QLineEdit(frame);
+    _ReplaceW = new QLineEdit(frame);
+
+    QPushButton *NextB = new QPushButton(tr("Следующее"), frame);
+    QPushButton *BackB = new QPushButton(tr("Предыдущее"), frame);
+    QPushButton *ReplB = new QPushButton(tr("Заменить"), frame);
+
+    QGridLayout *fl = new QGridLayout(frame);
+    fl->addWidget(TextFind, 0, 0);
+    fl->addWidget(TextReplace, 1, 0);
+    fl->addWidget(_FindW, 0, 1);
+    fl->addWidget(_ReplaceW, 1, 1);
+    frame->setLayout(fl);
+
+    QGridLayout *l = new QGridLayout(this);
+    l->addWidget(frame, 0, 0, 1, 0);
+    l->addWidget(NextB, 1, 0);
+    l->addWidget(BackB, 1, 1);
+    l->addWidget(ReplB, 1, 2);
+    FindDialog->setLayout(l);
+
+    connect(NextB, &QPushButton::clicked, this, &Widget::findNext);
+    connect(BackB, &QPushButton::clicked, this, &Widget::findPrev);
+    connect(ReplB, &QPushButton::clicked, this, &Widget::replace);
+
+    FindDialog->show();
 }
-void Widget::showChangeFont() {                                           // !!!
-    std::cout << "scf\n";
+void Widget::replace() {
+    if(_ReplaceW!=0) {
+        _TextField->textCursor().removeSelectedText();
+        _TextField->textCursor().insertText(_ReplaceW->text());
+    }
 }
-void Widget::showChangeBackground() {                                     // !!!
-    std::cout << "scb\n";
+
+void Widget::selectAll() {
+    _TextField->selectAll();
 }
-void Widget::showChangeLineColor() {                                      // !!!
-    std::cout << "sclc\n";
+void Widget::switchWordWrap(bool arg) {
+    _TextField->setLineWrapMode(
+                    arg?(QPlainTextEdit::WidgetWidth):(QPlainTextEdit::NoWrap));
 }
-void Widget::switchNumeration() {                                         // !!!
-    std::cout << "sn\n";
+
+void Widget::showChangeFont() {
+    QFontDialog *Dialog = new QFontDialog(this);
+    Dialog->exec();
+    _TextField->setFont(Dialog->selectedFont());
 }
-void Widget::switchToolBar() {                                            // !!!
-    std::cout << "stb\n";
+void Widget::showChangeBackground() {
+    QColor NewColor = QColorDialog::getColor(
+                                       _TextField->getBGColor(), this);
+    if(NewColor.isValid()) {
+        QPalette p;
+        p.setColor(QPalette::Active, QPalette::Base, NewColor);
+        p.setColor(QPalette::Inactive, QPalette::Base, NewColor);
+        _TextField->setPalette(p);
+    }
 }
-void Widget::switchState() {                                              // !!!
+void Widget::showChangeLineColor() {
+    QColor NewColor = QColorDialog::getColor(
+                _TextField->getLColor(), this);
+    if(NewColor.isValid())
+        _TextField->setLineColor(NewColor);
+}
+void Widget::switchNumeration(bool arg) {
+    _TextField->flag = arg;
+    _TextField->updateLineNumberAreaWidth(0);
+}
+void Widget::switchToolBar(bool arg) {                                    // !!!
+    _ToolBar->setVisible(arg);
+}
+void Widget::switchState(bool arg) {                                      // !!!
     std::cout << "sst\n";
 }
-void Widget::switchHighlight() {                                          // !!!
+void Widget::switchHighlight(bool arg) {                                  // !!!
     std::cout << "sh\n";
 }
-void Widget::с11Syntax() {                                                // !!!
+void Widget::c11Syntax() {                                                // !!!
     std::cout << "c11\n";
 }
-void Widget::сpp14Syntax() {                                              // !!!
+void Widget::cpp14Syntax() {                                              // !!!
     std::cout << "cpp14\n";
 }
 void Widget::showChangeStyle() {                                          // !!!
