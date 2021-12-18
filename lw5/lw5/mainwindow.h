@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "codeeditor.h"
+#include "highlighter.h"
 
 #include <QMainWindow>
 #include <QWidget>
@@ -9,6 +10,10 @@
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QLabel>
+#include <QTime>
+#include <QDate>
+#include <QPushButton>
+#include <QSettings>
 
 class Widget;
 
@@ -21,13 +26,26 @@ public:
 
 public slots:
     void updateStatus();
+    void daySaved();
+    void selectC(QString);
+
+private slots:
+    void passDay();
+    void chooseStyle(QAction*);
+    void showChangeStyle();
+    void showLoadStyle();
+    void setStyleColor();
+    void saveStyle();
 
 private:
+    void createEditStyleDialog();
+    void readStyle(QSettings*);
+    void writeStyle(QSettings*);
+
     QMenu*   _MenuFile;
     QAction* _ActionNew; // button ☺
     QAction* _ActionOpen; // dialog ☺
-public: QAction* _ActionSave; // dialog ☺☺☺
-private:
+    QAction* _ActionSave; // dialog ☺
     QAction* _ActionSaveAs; // dialog ☺
     QAction* _ActionQuit; // button ☺
 
@@ -49,25 +67,43 @@ private:
     QAction* _ActionChangeBackground; // modal ☺
     QAction* _ActionChangeLineColor; // modal ☺
     QAction* _ActionChangeNumeration; // check ☺
-    QAction* _ActionChangeToolBar; // check
-    QAction* _ActionChangeState; // check
-    QAction* _ActionChangeHighlight; // check
+    QAction* _ActionChangeToolBar; // check ☺
+    QAction* _ActionChangeState; // check ☺
+    QAction* _ActionChangeHighlight; // check ☺
     QMenu*   _MenuChangeSyntax; // submenu
-    QAction*   _C11; // button
-    QAction*   _Cpp14; // button
+    QAction*   _C11; // button ☺
+    QAction*   _C18; // button ☺
+    QAction*   _Cpp14; // button ☺
+    QAction*   _Cpp17; // button ☺
+    QAction*   _Cpp20; // button ☺
     QMenu*   _MenuChangeStyle; // submenu
-    QAction*   _ActionChangeStyle; // modal
-    QAction*   _ActionLoadStyle; // modal
-    //QAction**  _ActionsStyles; // buttons
-      //list of styles available, 1 available always - default
-
+    QAction*   _ActionChangeStyle; // modal ☺
+    QAction*   _ActionLoadStyle; // modal ☺
+    QAction*   _ActionDefaultStyle; // modal ☺
     QMenu* _MenuReference;
-    QAction* _ActionAbout;
+    QAction* _ActionAbout; // ☺
+
+    QPushButton* _KeywordB,
+               * _SLCommentB,
+               * _MLCommentB,
+               * _QuotationB,
+               * _SCharB,
+               * _FunctionB,
+               * _DirectiveB,
+               * _AngleB;
+    QDialog *_StyleDialog;
 
     Widget* _Widget;
     QLabel* _Cursor;
     QLabel* _Last;
     QLabel* _Amounts;
+    QTimer* _Timer;
+    bool _DayPassedC = false,
+         _DayPassedS = false;
+    QMap <QString, Style> _Styles;
+    Style _CurrStyle;
+    QAction* _CurrStyleAction;
+
 };
 
 // потому что нет правильной реализации tooltip лол
@@ -84,6 +120,21 @@ class Widget : public QWidget {
 
 public:
     Widget(MainWindow *parent = nullptr, int dh = 0);
+    long getX();
+    long getY();
+    long lineCount();
+    long wordCount();
+    long symbCount();
+    long kbCount();
+    Style getStyle();
+    void setStyle(Style);
+
+    QTextDocument *_Doc;
+    QTime _LSave,
+          _LChange;
+    QDate _LSaveDate,
+          _LChangeDate;
+    QString _File;
 
 public slots:
     void newFile();
@@ -107,13 +158,13 @@ public slots:
     void showChangeLineColor();
     void switchNumeration(bool);
     void switchToolBar(bool);
-    void switchState(bool);
     void switchHighlight(bool);
     void c11Syntax();
+    void c18Syntax();
     void cpp14Syntax();
-    void showChangeStyle();
-    void showLoadStyle();
-    //void switchStyle(); ֎
+    void cpp17Syntax();
+    void cpp20Syntax();
+    void showAbout(); // ֎
 
 private:
     MenuBar* _ToolBar;
@@ -130,11 +181,11 @@ private:
     QAction*    _ToolReplace; // nonmodal
 
     CodeEditor* _TextField;
-    QTextDocument *_Doc;
+    Highlighter* _Highlighter;
     QLineEdit* _FindW;
     QLineEdit* _ReplaceW;
-    QString _File;
     bool _Changed;
+    MainWindow* _MainWindow;
 
 };
 

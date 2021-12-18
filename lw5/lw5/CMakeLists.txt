@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
         mainwindow.h
         codeeditor.h
         codeeditor.cpp
+        highlighter.h
+        highlighter.cpp
         resource_file.qrc
 )
 
