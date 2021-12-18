@@ -3,7 +3,6 @@
 #include <QPainter>
 #include <QTextBlock>
 
-
 CodeEditor::CodeEditor(QWidget *parent)
     : QPlainTextEdit(parent)
 {
@@ -126,5 +125,3 @@ QSize LineNumberArea::sizeHint() const {
 void LineNumberArea::paintEvent(QPaintEvent *event) {
     codeEditor->lineNumberAreaPaintEvent(event);
 }
-
-

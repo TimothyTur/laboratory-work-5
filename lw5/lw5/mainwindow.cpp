@@ -21,14 +21,7 @@
 #include <QTextDocument>
 #include <QTimer>
 #include <QFormLayout>
-
-
-
-
-
-
-
-#include <iostream>
+#include <QTextCodec>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -553,7 +546,6 @@ Widget::Widget(MainWindow *parent, int dh)
     _MainWindow = parent;
     setMinimumSize(800,600-dh);
     _ToolBar = new MenuBar(this);
-    //_ToolBar->setToolTipsVisible(true);
     _ToolBar->setDefaultUp(true);
     _ToolNew = _ToolBar->addAction(tr("Новый"), this, SLOT(newFile()));
     _ToolNew->setIcon(QIcon(":images/new.png"));
@@ -632,14 +624,11 @@ void Widget::openFile() {
         return;
     }
     setWindowTitle(fileName);
-    //_TextField->setText(text);
     QByteArray data = file.readAll();
-    QMimeDatabase db;
-    const QString &mimeType =
-                           db.mimeTypeForFileNameAndData(fileName, data).name();
-    if (mimeType == "text/plain")
-        _TextField->setPlainText(QString::fromUtf8(data));
-    //setname(f);
+    QTextCodec *codec = Qt::codecForHtml(data);
+    QString str = codec->toUnicode(data);
+    str = QString::fromLocal8Bit(data);
+    _TextField->setPlainText(str);
     file.close();
     _MainWindow->daySaved();
     _MainWindow->updateStatus();
@@ -731,11 +720,9 @@ void Widget::find() {
     FindDialog->show();
 }
 void Widget::findNext() {
-    //QString searchString = _FindW->text();
     _TextField->find(_FindW->text(), QTextDocument::FindWholeWords);
 }
 void Widget::findPrev() {
-    //QString searchString = findword->text();
     _TextField->find(_FindW->text(),
                    QTextDocument::FindWholeWords | QTextDocument::FindBackward);
 }
@@ -856,9 +843,12 @@ void Widget::showAbout() {
     QLabel *pic = new QLabel(this);
     pic->setPixmap(me);
     QLabel *dateOfBuild = new QLabel();
-    dateOfBuild->setText(tr(" Версия QT ") + QT_VERSION_STR +
-                          "\n Тур Тимофей \n и мои 2 последние нервные клетки" +
-                          "\n сделали это за 48 часов");
+    dateOfBuild->setText(
+                tr(" Версия сборки QT ") + QT_VERSION_STR +
+                tr(" \nВерсия запуска QT ") + qVersion() +
+                tr(" \nВремя и дата сбордки ") + __TIME__ + " " + __DATE__ +
+                "\n Тур Тимофей \n и мои 2 последние нервные клетки" +
+                "\n сделали это за 48 часов");
 
     l->addWidget(pic, 0, 0, Qt::AlignCenter);
     l->addWidget(dateOfBuild);
